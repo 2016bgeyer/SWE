@@ -20,7 +20,7 @@ app.get('/cool', function(request, response) {
     response.send(cool());
 });
 
-app.get('/:var1/:var2', function(request, response) {
+app.get('/blah/:var1/blah/:var2', function(request, response) {
     response.send(req.params);
 });
 
