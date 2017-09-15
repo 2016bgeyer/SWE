@@ -20,8 +20,8 @@ app.get('/cool', function(request, response) {
     response.send(cool());
 });
 
-app.get('/blah/:var1/blah/:var2', function(request, response) {
-    response.send(req.params);
+app.get('/users/:userId/books/:bookId', function(request, response) {
+    response.send(request.params);
 });
 
 app.listen(app.get('port'), function() {
