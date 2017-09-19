@@ -119,11 +119,11 @@ app.listen(app.get('port'), function() {
 });
 
 
-app.get('*', function(req, res, next) {
-    var err = new Error();
-    err.status = 404;
-    next(err);
-});
+// app.get('*', function(req, res, next) {
+//     var err = new Error();
+//     err.status = 404;
+//     next(err);
+// });
 
 
 /*
