@@ -1,8 +1,14 @@
 var cool = require('cool-ascii-faces');
 var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-var express = require('express');
+const express = require('express');
+const nock = require('nock');
+const fetch=require('node-fetch');
 var app = express();
 var pg = require('pg');
+var bodyParser = require('body-parser');
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -93,9 +99,24 @@ app.route('/:count/:query/:field/:name')
     res.send(search);
 });
 
+app.put('/search', function(req,res){
+    // var reactions = req.body.reactions;
+    // res.end('Reactions: ' + reactions);
+    search=search[0].patient.reaction
+
+    res.send(search)
+});
+//     res.send("Reactions: "+JSON.stringify(search[0].patient.reaction));
+// });
+
+
 
 app.get('/reactions',function(req,res){             //#5    Stores last Search's reactions: http://localhost:5000/reactions
+
+
+
     res.send("Reactions: "+JSON.stringify(search[0].patient.reaction));
+    // res.send('Reactions:',search[0].patient.reaction)
 });
 
 
