@@ -7,7 +7,7 @@ var app = express();
 var pg = require('pg');
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 
 app.set('port', (process.env.PORT || 5000));
@@ -79,8 +79,57 @@ app.get('/commonmonth', function(req, res){         //#3    finds the most advrs
 });
 
 
-var search;
+// var search;
+var search = fetch('https://api.fda.gov/drug/event.json?count=patient.patientsex%27').then(function(dataRes) {
+    console.log("fetch");
+    return dataRes.json();
+});
 var name;
+
+app.get('/ADD_Reaction/:reaction', function(req, res){
+
+
+    fetch('',
+        {
+            method: "POST"
+        }).then(function(dataRes) {
+        console.log("fetch");
+        search[0].patient.reaction.push({"reactionoutcome":"100","reactionmeddraversionpt":"20","reactionmeddrapt":req.params.reaction});
+        return dataRes.json();
+    });
+    console.log("post");
+
+    res.send(search[0].patient.reaction);
+
+});
+app.get('/ADD_Reaction/:reaction', function(req, res){
+
+
+    fetch('',
+        {
+            method: "PUT"
+        }).then(function(dataRes) {
+        console.log("fetch");
+        return dataRes.json();
+    });
+    console.log("post");
+
+    search[0].patient.reaction.push({"reactionoutcome":"100","reactionmeddraversionpt":"20","reactionmeddrapt":req.params.reaction});
+    res.send(search[0].patient.reaction);
+
+});
+
+var name;
+app.post('/add/users', function(req, res) {
+    var user_id = req.body.id;
+    var token = req.body.token;
+    var geo = req.body.geo;
+
+    res.send(user_id + ' ' + token + ' ' + geo);
+});
+
+
+
 app.route('/:count/:query/:field/:name')
     .get(function(req, res,next) {                  //#4       SEARCH FUNCTION THAT GETS, PUTS, AND DELETES): http://localhost:5000/1/search/reactionmeddrapt/headache
         var xhr1 = new xhr();
