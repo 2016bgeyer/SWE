@@ -1,14 +1,12 @@
-var cool = require('cool-ascii-faces');
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const cool = require('cool-ascii-faces');
 const express = require('express');
 const nock = require('nock');
 const fetch=require('node-fetch');
-var app = express();
-var pg = require('pg');
-var bodyParser = require('body-parser');
+const app = express();
+const pg = require('pg');
+const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -17,7 +15,6 @@ app.use(express.static(__dirname + '/public'));
 // views is directory for all template files
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
-
 
 /*
 5 Services:
@@ -28,27 +25,37 @@ app.set('view engine', 'ejs');
 5.Current Illness Route/Page statistics: GET, POST
  */
 
-
-class xhr extends XMLHttpRequest{
-    opens(query){
-        this.open("GET", `https://api.fda.gov/drug/event.json${query}`, false);
-        this.send(null);
-        return JSON.parse(this.responseText);
-    }
-}
-
-
-
-
-app.get('/count/:info', function(req, res) {       //#1     http://localhost:5000/count/patient.reaction.reactionmeddrapt.exact
-    var xhr1 = new xhr();
-    var count = xhr1.opens(`?count=${req.params.info}`);
-    res.send(count);
+//#1     http://localhost:5000/count/patient.reaction.reactionmeddrapt.exact
+app.get('/count/:info', function(req, res) {
+    fetch(`https://api.fda.gov/drug/event.json?count=${req.params.info}`)
+    .then(function(dataRes){
+        return dataRes.json();
+    }).then(function(json){
+        res.send(json.results);
+    }).catch(function(err) {
+        fetch(`https://api.fda.gov/drug/event.json?count=${req.params.info}`)
+    .then(function(dataRes){
+            return dataRes.json();
+        }).then(function(json){
+            res.send(json.results);
+        });
+        console.log("err", err);
+        throw new Error("An error occurred");
+    });
 });
-app.get('/stats/:info', function(req, res){         //#2    http://localhost:5000/stats/patient.reaction.reactionmeddrapt.exact
-    let xhr1 = new xhr();
-    let count = xhr1.opens(`?count=${req.params.info}`).results;
-    res.send(`${count[0].term} occurs the most at ${count[0].count} times and ${count[count.length-1].term} occurs the least at ${count[count.length-1].count} times.`);
+//#2    http://localhost:5000/stats/patient.reaction.reactionmeddrapt.exact
+app.get('/stats/:info', function(req, res){
+    fetch(`https://api.fda.gov/drug/event.json?count=${req.params.info}`)
+    .then(function(dataRes){
+        return dataRes.json();
+    }).then(function(json){
+        return json.results;
+    }).then(function(data){
+        res.send(`${data[0].term} occurs the most at ${data[0].count} times and ${data[data.length-1].term} occurs the least at ${data[data.length-1].count} times.`);
+    }).catch(function(err) {
+        console.log("err", err);
+        throw new Error("An error occurred");
+    });
 });
 class streak{
     constructor(month, size){
@@ -56,119 +63,135 @@ class streak{
         this.size = size;
     }
 }
-
-
-app.get('/commonmonth', function(req, res){         //#3    finds the most advrse druge effects during one month: http://localhost:5000/commonmonth
-    let xhr1 = new xhr();
-    let count = xhr1.opens(`?count=receiptdate`).results;
+//#3    finds the month with the most adverse drug events: http://localhost:5000/commonmonth
+app.get('/commonmonth', function(req, res){
     let current = new streak(0, 0);
     let longest = new streak(0, 0);
-    for(let date of count){
-        let time = parseInt(date.time.substring(4,6));
-        if(current.month == time){
-            current.size += parseInt(date.count);
-            if(current.size > longest.size){
-                longest = current;
+    fetch('https://api.fda.gov/drug/event.json?count=receiptdate')
+        .then(function(dataRes) {
+            return dataRes.json();
+        }).then(function(json) {
+            for(let date of json.results){
+                let time = parseInt(date.time.substring(4,6));
+                if(current.month == time){
+                    current.size += parseInt(date.count);
+                    if(current.size > longest.size){
+                        longest = current;
+                    }
+                }
+                else{
+                    current = new streak(time, parseInt(date.count));
+                }
             }
-        }
-        else{
-            current = new streak(time, parseInt(date.count));
-        }
-    }
-    res.send(`The month with the most adverse drug events is month ${longest.month}.`);
+        }).then(function() {
+            res.send(`The month with the most adverse drug events is month ${longest.month}.`)
+    }).catch(function(err) {
+        console.log("err", err);
+        throw new Error("An error occurred");
+    });
 });
 
-
-// var search;
-var search = fetch('https://api.fda.gov/drug/event.json?count=patient.patientsex%27').then(function(dataRes) {
-    console.log("fetch");
+/*// var search;
+let search = fetch('https://api.fda.gov/drug/event.json?count=patient.patientsex').then(function(dataRes) {
     return dataRes.json();
-});
-var name;
+});*/
 
-app.get('/ADD_Reaction/:reaction', function(req, res){
+class Reaction{
+    constructor(json){
+        this.json = json;
+    }
+    showReactions(){
+        let text = [];
+        for(let reaction of search[0].patient.reaction)
+            text.push(reaction.reactionmeddrapt);
+        return text;
+    }
+}
 
-
-    fetch('',
-        {
-            method: "POST"
-        }).then(function(dataRes) {
-        console.log("fetch");
-        search[0].patient.reaction.push({"reactionoutcome":"100","reactionmeddraversionpt":"20","reactionmeddrapt":req.params.reaction});
-        return dataRes.json();
+let search;
+//#4       SEARCH FUNCTION : http://localhost:5000/2/search/reactionmeddrapt/headache
+app.get('/:count/:query/:field/:name', function(req, res){
+    fetch(`https://api.fda.gov/drug/event.json?${req.params.query}=patient.reaction.${req.params.field}:"${req.params.name}"&limit=${req.params.count}`)
+        .then(function(dataRes){
+            return dataRes.json();
+        }).then(function(json){
+        search = json.results;
+        let reactions=new Reaction(search);
+        return reactions;
+        }).then(function(reactions){
+            res.send(reactions.showReactions());
     });
-    console.log("post");
-
-    res.send(search[0].patient.reaction);
-
 });
-app.get('/ADD_Reaction/:reaction', function(req, res){
 
 
-    fetch('',
-        {
-            method: "PUT"
-        }).then(function(dataRes) {
-        console.log("fetch");
+//#5    Stores last Search's reactions: http://localhost:5000/Search_reactions
+app.get('/Search_reactions',function(req,res){
+    if(search) {
+        let reactions = new Reaction(search);
+        res.send("First Reactions: " +reactions.showReactions());
+    }
+    else
+        res.send("A search has not been performed yet.");
+});
+
+/*let reactions = {};
+fetch('https://api.fda.gov/drug/event.json?search=_exists_:patient.reaction')
+    .then(function(dataRes) {
         return dataRes.json();
-    });
-    console.log("post");
+    }).then(function(json) {
+    reactions = json.results[0].patient.reaction;
+}).catch(function(err) {
+    console.log("err", err);
+    throw new Error("An error occurred");
+});*/
 
-    search[0].patient.reaction.push({"reactionoutcome":"100","reactionmeddraversionpt":"20","reactionmeddrapt":req.params.reaction});
-    res.send(search[0].patient.reaction);
 
+
+//#6    Adds reactions to latest search. http://localhost:5000/addReaction/coughing/
+app.get('/addReaction/:reaction', function(req, res){
+    if(search){
+        search[0].patient.reaction.push({"reactionmeddrapt":req.params.reaction});
+        let reaction = new Reaction(search);
+        res.send(reaction.showReactions());
+    }
+    else
+        res.send("A search has not been performed yet.");
 });
 
-var name;
-app.post('/add/users', function(req, res) {
-    var user_id = req.body.id;
-    var token = req.body.token;
-    var geo = req.body.geo;
+let tweets = {};
 
-    res.send(user_id + ' ' + token + ' ' + geo);
+setInterval(() => {
+    if (search) {
+        fetch(`http://api.flutrack.org/?s=${search[1].patient.reaction[0].reactionmeddrapt}OR${search[1].patient.reaction[1].reactionmeddrapt}`)
+            .then(function (dataRes) {
+                return dataRes.json();
+
+            }).then(function (json) {
+                console.log("interval");
+            tweets = json;
+        })
+    }
+    }, 1000);
+class twitter{
+    constructor(json){
+        this.json = json;
+    }
+    showTweets(){
+        let text = [];
+        for(let tweet of tweets)
+            text.push(tweet.tweet_text);
+        return text;
+    }
+}
+//#7       Searches flutrack for symptoms specified: http://localhost:5000/tweets/
+app.get('/tweets', function(req, res) {
+    if (tweets&&search) {
+        let results = new twitter(tweets);
+        res.send(results.showTweets());
+    }
+    else
+        res.send("A search has not been performed yet.");
 });
-
-
-
-app.route('/:count/:query/:field/:name')
-    .get(function(req, res,next) {                  //#4       SEARCH FUNCTION THAT GETS, PUTS, AND DELETES): http://localhost:5000/1/search/reactionmeddrapt/headache
-        var xhr1 = new xhr();
-        name=req.params.name;
-        search = xhr1.opens(`?${req.params.query}=patient.reaction.${req.params.field}:"${req.params.name}"&limit=${req.params.count}`).results;
-        next();
-    }, function(req,res){
-        res.send(search);
-    }).delete(function(req,res){
-    res.send("Deleted Search");
-}).post(function(req,res){
-    res.send("POST Test")
-}).put(function(req,res){
-    search = xhr1.opens(`?${req.params.query}=patient.reaction.${req.params.field}:"${req.params.name}"&limit=10`).results;
-    console.log(`?${req.params.query}=patient.reaction.${req.params.field}:"${req.params.name}"&limit=10`);
-    res.send(search);
-});
-
-app.put('/search', function(req,res){
-    // var reactions = req.body.reactions;
-    // res.end('Reactions: ' + reactions);
-    search=search[0].patient.reaction
-
-    res.send(search)
-});
-//     res.send("Reactions: "+JSON.stringify(search[0].patient.reaction));
-// });
-
-
-
-app.get('/reactions',function(req,res){             //#5    Stores last Search's reactions: http://localhost:5000/reactions
-
-
-
-    res.send("Reactions: "+JSON.stringify(search[0].patient.reaction));
-    // res.send('Reactions:',search[0].patient.reaction)
-});
-
-
 
 
 //leaving this alone
@@ -188,13 +211,11 @@ app.listen(app.get('port'), function() {
   console.log('Node app is running on port', app.get('port'));
 });
 
-
 // app.get('*', function(req, res, next) {
 //     var err = new Error();
 //     err.status = 404;
 //     next(err);
 // });
-
 
 /*
 //ERROR HANDLING!!
