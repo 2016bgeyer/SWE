@@ -1,0 +1,9 @@
+1. Ben Geyer and Kevin Cascio
+2. https://serene-tundra-31573.herokuapp.com/
+3. 	1. shows the JSON of the counts of some parameters.  example: /count/patient.reaction.reactionmeddrapt.exact
+	2. tells the most occurring and least occurring of the parameter.  example: /stats/patient.reaction.reactionmeddrapt.exact
+	3. finds the month that had the most incidents in it. example: /commonmonth
+	4. searches for a specific property and name of it. example: /2/search/reactionmeddrapt/headache
+	5. stores the last search's reactions. example /Search_reactions
+	6. adds a reaction to the latest search. example: /addReaction/coughing
+	7. searches flutrack for the symptoms on the last search. example: /tweets
